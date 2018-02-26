@@ -22,15 +22,15 @@
       }        
     }
     if (!mapFound){
-	    selectedMap = staticMap;
-	  }
-	  resolution = (layout.options.CustomOptions['low-resolution']) ? 'Low' : 'High';
+      selectedMap = staticMap;
+    }
+    resolution = (layout.options.CustomOptions['low-resolution']) ? 'Low' : 'High';
     for(m in AmCharts.maps){
-    	if (AmCharts.maps.hasOwnProperty(m)){
-    		if (m.toLowerCase() === (selectedMap + resolution).toLowerCase()){
-    			return m;
-    		}
-    	}
+      if (AmCharts.maps.hasOwnProperty(m)){
+        if (m.toLowerCase() === (selectedMap + resolution).toLowerCase()){
+          return m;
+        }
+      }
     }
     return '';
   }
@@ -43,7 +43,6 @@
       isoProperty = this.options.CustomOptions['iso-code-pt'], 
       latlngProperty = this.options.CustomOptions['lat-lng-pt'];
 
-    this.intialMap = getInialMap(object, this);
     if (cwApi.isUndefinedOrNull(object) || cwApi.isUndefined(object.associations)) {
       // Is a creation page therefore a real object does not exist
       if (!cwApi.isUndefined(this.mmNode.AssociationsTargetObjectTypes[this.nodeID])) {
@@ -100,6 +99,7 @@
     res.markers = markers;
     output.push('<div class="AmMap cw-visible AmMap-', this.nodeID, ' cw-jvector-map cw-ammap cw-ammap-', objectId, '" id="cw-map-', this.nodeID, '"></div>');
     this.data = res;
+    this.mainObject = object;
   };
 
   AmMap.prototype.applyJavaScript = function() {
@@ -110,12 +110,8 @@
     if (this.init) {
       $('#cw-map-'+this.nodeID).parents('.popout').toggleClass('popout-cw-map');
       this.init = false;
-      if (this.intialMap ==='') {
-        cwApi.notificationManager.addError($.i18n.prop('anmap_missing_map'));
-        return;
-      }
       if (!cwApi.isDebugMode()){
-      	libsToLoad = ['modules/ammap/ammap.min.js'];
+        libsToLoad = ['modules/ammap/ammap.min.js'];
         // AsyncLoad
         cwApi.customLibs.aSyncLayoutLoader.loadUrls(libsToLoad, function(error) {
           if (error === null) {
@@ -145,17 +141,22 @@
 
     $('#cw-map-'+this.nodeID).css('height', cwApi.getFullScreenHeight());
 
+    this.intialMap = getInialMap(this.mainObject, this);
+    if (this.intialMap === '') {
+      cwApi.notificationManager.addError($.i18n.prop('anmap_missing_map'));
+      return;
+    }
     map = AmCharts.makeChart('cw-map-'+this.nodeID, {
-    	'type': 'map',
-    	'dataProvider': {
-    		'map': that.intialMap,
+      'type': 'map',
+      'dataProvider': {
+        'map': that.intialMap,
         'getAreasFromMap': true,
         'areas': that.data.regions,
         'images': that.data.markers
-    	},
-    	'areasSettings':{
-    		'selectedColor': MAX_REGION_COLOR
-    	},
+      },
+      'areasSettings':{
+        'selectedColor': MAX_REGION_COLOR
+      },
       'language': cwApi.getSelectedLanguage(),
       'addClassNames':true,
       'mouseWheelZoomEnabled':true
