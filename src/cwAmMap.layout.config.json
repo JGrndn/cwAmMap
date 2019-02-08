@@ -28,5 +28,10 @@
 		"DisplayName": "Low resolution",
 		"Description": "Check this option if you want to use Low resolution maps",
 		"Type": 1
+	},{
+		"Id": "redirect-tab",
+		"DisplayName": "Redirect tab",
+		"Description": "Set the id of the tab you want to be redirected to if there is no map to display",
+		"Type": 0
 	}]
 }

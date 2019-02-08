@@ -1,12 +1,12 @@
 /* Copyright (c) 2012-2013 Casewise Systems Ltd (UK) - All rights reserved */
 /*global cwAPI, jQuery, AmCharts */
-(function(cwApi, $) {
+(function (cwApi, $) {
   "use strict";
 
   var MAX_REGION_COLOR = '#004488',
     AmMap;
 
-  AmMap = function(options, viewSchema) {
+  AmMap = function (options, viewSchema) {
     cwApi.extend(this, cwApi.cwLayouts.CwLayout, options, viewSchema);
     this.hasTooltip = true;
     cwApi.registerLayoutForJSActions(this);
@@ -21,6 +21,8 @@
       if (object.properties[mapPt] !== '') {
         selectedMap = object.properties[mapPt].toLowerCase();
         mapFound = true;
+      } else {
+        return null;
       }
     }
     if (!mapFound) {
@@ -37,7 +39,7 @@
     return '';
   }
 
-  AmMap.prototype.drawAssociations = function(output, associationTitleText, object) {
+  AmMap.prototype.drawAssociations = function (output, associationTitleText, object) {
     /*jslint unparam: true*/
     var objectId, associationTargetNode, res, i, item,
       regions = [],
@@ -101,24 +103,25 @@
 
     res.regions = regions;
     res.markers = markers;
-    output.push('<div class="AmMap cw-visible AmMap-', this.nodeID, ' cw-jvector-map cw-ammap cw-ammap-', objectId, '" id="cw-map-', this.nodeID, '"></div>');
+    output.push('<div class="AmMap AmMap-', this.nodeID, ' cw-jvector-map cw-ammap cw-ammap-', objectId, '" id="cw-map-', this.nodeID, '"></div>');
     this.data = res;
     this.mainObject = object;
   };
 
-  AmMap.prototype.applyJavaScript = function() {
+  AmMap.prototype.applyJavaScript = function () {
     var that = this,
       libsToLoad;
     if (cwApi.isUndefined(this.data)) {
       return;
     }
+
     if (this.init) {
       $('#cw-map-' + this.nodeID).parents('.popout').toggleClass('popout-cw-map');
       this.init = false;
       if (!cwApi.isDebugMode()) {
         libsToLoad = ['modules/ammap/ammap.min.js'];
         // AsyncLoad
-        cwApi.customLibs.aSyncLayoutLoader.loadUrls(libsToLoad, function(error) {
+        cwApi.customLibs.aSyncLayoutLoader.loadUrls(libsToLoad, function (error) {
           if (error === null) {
             that.createMap();
           } else {
@@ -131,11 +134,12 @@
     }
   };
 
-  AmMap.prototype.createMap = function() {
+  AmMap.prototype.createMap = function () {
     var that = this,
-      map, goToPage, handleClick, handleDrawn;
+      map, goToPage, handleClick, handleDrawn,
+      tabRedirect, qs, hash;
 
-    goToPage = function(item) {
+    goToPage = function (item) {
       if (!cwApi.isUndefined(item)) {
         var hash;
         if (that.options.HasLink === true) {
@@ -145,21 +149,32 @@
       }
     };
 
-    handleClick = function(e){
+    handleClick = function (e) {
       goToPage(e.mapObject.cwobject);
     };
 
-    handleDrawn = function(){
-      $('#cw-map-'+that.nodeID).find('path[fill="' + MAX_REGION_COLOR + '"]').attr('cw-selected-zone', true).css('cursor', 'pointer');
+    handleDrawn = function () {
+      $('#cw-map-' + that.nodeID).find('path[fill="' + MAX_REGION_COLOR + '"]').attr('cw-selected-zone', true).css('cursor', 'pointer');
     };
 
-    $('#cw-map-' + this.nodeID).css('height', cwApi.getFullScreenHeight());
+    $('#cw-map-' + this.nodeID).addClass('cw-visible').css('height', cwApi.getFullScreenHeight());
 
     this.intialMap = getInialMap(this.mainObject, this);
-    if (this.intialMap === '') {
+    tabRedirect = this.options.CustomOptions['redirect-tab'];
+    if (this.intialMap === '' || (this.intialMap === null && tabRedirect === '')) {
       cwApi.notificationManager.addError($.i18n.prop('anmap_missing_map'));
       return;
     }
+    if (this.intialMap === null && tabRedirect !== '') {
+      qs = cwApi.getQueryStringObject();
+      if (qs.cwtype === 'index') {
+        hash = cwApi.getIndexViewHashWithTab(qs.cwview, tabRedirect);
+      } else {
+        hash = cwApi.getSingleViewHashWithTab(qs.cwview, qs.cwid, tabRedirect);
+      }
+      cwApi.updateURLHash(hash);
+    }
+
     map = AmCharts.makeChart('cw-map-' + this.nodeID, {
       'type': 'map',
       'dataProvider': {
